@@ -168,6 +168,21 @@ tests( 'Ractive-adaptors-ampersand', function ( Ractive, Model, Collection ) {
 			model.set( 'message', 'foo' );
 		});
 
+		it( 'does not trigger change events when re-setting nested models', function () {
+			var sublist = model.get('sublist');
+			ractive.set( 'model', model );
+
+			model.set('sublist', sublist);
+			sublist.on( 'add', function() {
+				throw new Error('Unexpected "add" event');
+			});
+			sublist.on( 'remove', function() {
+				throw new Error('Unexpected "remove" event');
+			});
+
+			ractive.set( 'model.sublist', sublist );
+		});
+
 	});
 
 	/*

@@ -118,6 +118,14 @@
 			// Only set if the model didn't originate the change itself, and
 			// only if it's an immediate child property
 			if ( !isLocked( this.value ) && keypath.indexOf( '.' ) === -1 ) {
+				// If the attribute value is a Collection that has not actually
+				// changed, setting it with `Model#set` will translate to an
+				// eventual `Collection#set`, which will trigger unecessary
+				// `add` and `remove` events.
+				if (this.value.get(keypath) === value) {
+					return;
+				}
+
 				this.value.set( keypath, value );
 			}
 		},
