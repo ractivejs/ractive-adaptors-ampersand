@@ -1,46 +1,40 @@
 /*
 
-	Backbone adaptor plugin
+	Ampersand adaptor plugin
 	=======================
 
-	Version 0.2.0. Copyright 2013 - 2014 @rich_harris, MIT licensed.
+	Version 0.1.0. Copyright 2015 Mike Pennisi, MIT licensed.
 
-	This plugin allows Ractive.js to work seamlessly with Backbone.Model and
-	Backbone.Collection instances.
-
-	For more information see ractivejs.org/examples/backbone and
-	https://github.com/Rich-Harris/Ractive/wiki/Adaptors.
-
-	==========================
-
-	Troubleshooting: If you're using a module system in your app (AMD or
-	something more nodey) then you may need to change the paths below,
-	where it says `require( 'ractive' )` or `define([ 'ractive' ]...)`.
+	This plugin allows Ractive.js to work seamlessly with Amperand's State
+	classes (ampersand-state, ampersand-model, ampersand-collection, and
+	amperand-rest-collection).
 
 	==========================
 
 	Usage: Include this file on your page below Ractive, e.g:
 
 	    <script src='lib/ractive.js'></script>
-	    <script src='lib/ractive-adaptors-backbone.js'></script>
+	    <script src='lib/ractive-adaptors-ampersand.js'></script>
+
+	...and inside your application:
+
+		window.Ractive.adaptors.Ampersand = window.RactiveAdaptorsAmpersand;
 
 	Or, if you're using a module loader, require this module:
 
 	    define( function ( require ) {
 	      var Ractive = require( 'ractive' );
 
-	      // requiring the plugin will 'activate' it - no need to use
-	      // the return value
-	      require( 'ractive-adaptors-backbone' );
+	      Ractive.adapters.Ampersand = require( 'ractive-adaptors-ampersand' );
 	    });
 
-	Then tell Ractive to expect Backbone objects by adding an `adapt` property:
+	Then tell Ractive to expect Ractive objects by adding an `adapt` property:
 
 	    var ractive = new Ractive({
 	      el: myContainer,
 	      template: myTemplate,
-	      data: { foo: myBackboneModel, bar: myBackboneCollection },
-	      adapt: [ 'Backbone' ]
+	      data: { foo: myAmpersandModel, bar: myAmpersandCollection },
+	      adapt: [ 'Ampersand' ]
 	    });
 
 */
@@ -51,32 +45,25 @@
 
 	// Common JS (i.e. browserify) environment
 	if ( typeof module !== 'undefined' && module.exports && typeof require === 'function' ) {
-		factory( require( 'ractive' ), require( 'backbone' ) );
+		module.exports = factory();
 	}
 
 	// AMD?
 	else if ( typeof define === 'function' && define.amd ) {
-		define([ 'ractive', 'backbone' ], factory );
+		define( factory );
 	}
 
 	// browser global
-	else if ( global.Ractive && global.Backbone ) {
-		factory( global.Ractive, global.Backbone );
-	}
-
 	else {
-		throw new Error( 'Could not find Ractive or Backbone! Both must be loaded before the ractive-adaptors-backbone plugin' );
+		window.RactiveAdaptorsAmpersand = factory();
 	}
 
-}( typeof window !== 'undefined' ? window : this, function ( Ractive, Backbone ) {
+}( typeof window !== 'undefined' ? window : this, function () {
 
 	'use strict';
 
-	var BackboneModelWrapper, BackboneCollectionWrapper, lockProperty = '_ractiveAdaptorsBackboneLock';
-
-	if ( !Ractive || !Backbone ) {
-		throw new Error( 'Could not find Ractive or Backbone! Check your paths config' );
-	}
+	var lockProperty = '_ractiveAdaptorsAmpersandLock';
+	var Adaptor, ModelWrapper, CollectionWrapper;
 
 	function acquireLock( key ) {
 		key[lockProperty] = ( key[lockProperty] || 0 ) + 1;
@@ -92,20 +79,25 @@
 		return !!key[lockProperty];
 	}
 
-	Ractive.adaptors.Backbone = {
+	function isModel( object ) {
+		return object && typeof object.getType === 'function' &&
+			object.getType() === object[object.typeAttribute];
+	}
+
+	Adaptor = {
 		filter: function ( object ) {
-			return object instanceof Backbone.Model || object instanceof Backbone.Collection;
+			return object && (object.isCollection || isModel( object ));
 		},
 		wrap: function ( ractive, object, keypath, prefix ) {
-			if ( object instanceof Backbone.Model ) {
-				return new BackboneModelWrapper( ractive, object, keypath, prefix );
+			if (object.isCollection) {
+				return new CollectionWrapper( ractive, object, keypath, prefix );
+			} else {
+				return new ModelWrapper( ractive, object, keypath, prefix );
 			}
-
-			return new BackboneCollectionWrapper( ractive, object, keypath, prefix );
 		}
 	};
 
-	BackboneModelWrapper = function ( ractive, model, keypath, prefix ) {
+	ModelWrapper = function( ractive, model, keypath, prefix ) {
 		this.value = model;
 
 		model.on( 'change', this.modelChangeHandler = function () {
@@ -115,12 +107,12 @@
 		});
 	};
 
-	BackboneModelWrapper.prototype = {
+	ModelWrapper.prototype = {
 		teardown: function () {
 			this.value.off( 'change', this.modelChangeHandler );
 		},
 		get: function () {
-			return this.value.attributes;
+			return this.value;
 		},
 		set: function ( keypath, value ) {
 			// Only set if the model didn't originate the change itself, and
@@ -130,19 +122,18 @@
 			}
 		},
 		reset: function ( object ) {
-			// If the new object is a Backbone model, assume this one is
+			// If the new object is an Ampersand model, assume this one is
 			// being retired. Ditto if it's not a model at all
-			if ( object instanceof Backbone.Model || !(object instanceof Object) ) {
+			if ( isModel( object ) || !(object instanceof Object)) {
 				return false;
 			}
 
 			// Otherwise if this is a POJO, reset the model
-			//Backbone 1.1.2 no longer has reset and just uses set
 			this.value.set( object );
 		}
 	};
 
-	BackboneCollectionWrapper = function ( ractive, collection, keypath ) {
+	CollectionWrapper = function ( ractive, collection, keypath ) {
 		this.value = collection;
 
 		collection.on( 'add remove reset sort', this.changeHandler = function () {
@@ -154,7 +145,7 @@
 		});
 	};
 
-	BackboneCollectionWrapper.prototype = {
+	CollectionWrapper.prototype = {
 		teardown: function () {
 			this.value.off( 'add remove reset sort', this.changeHandler );
 		},
@@ -166,9 +157,9 @@
 				return;
 			}
 
-			// If the new object is a Backbone collection, assume this one is
+			// If the new object is an Ampersand collection, assume this one is
 			// being retired. Ditto if it's not a collection at all
-			if ( models instanceof Backbone.Collection || Object.prototype.toString.call( models ) !== '[object Array]' ) {
+			if ( models.isCollection || Object.prototype.toString.call( models ) !== '[object Array]' ) {
 				return false;
 			}
 
@@ -177,4 +168,5 @@
 		}
 	};
 
+	return Adaptor;
 }));

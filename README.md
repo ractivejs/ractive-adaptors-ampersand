@@ -1,41 +1,62 @@
 
-Ractive.js Backbone adaptor
-===========================
+Ractive.js Ampersand adaptor
+============================
 
-Use Backbone models and collections in your [Ractive] components.<br>
-**[View demo ›][Example]**
-
-[![Status](http://img.shields.io/travis/ractivejs/ractive-adaptors-backbone/master.svg?style=flat)](https://travis-ci.org/ractivejs/ractive-adaptors-backbone "See test builds")
+Use Ampersand State classes (`ampersand-state`, `ampersand-model`,
+`ampersand-collection`, and `ampersand-rest-collection`) in your [Ractive]
+components.<br>
 
 *Find more Ractive.js plugins at 
 [docs.ractivejs.org/latest/plugins](http://docs.ractivejs.org/latest/plugins)*
 
 ## Installation
 
-Include `ractive-adaptors-backbone.min.js` on your page below Ractive, e.g:
+To use this adaptor, you will need to load the script, attach it to your
+applications `Ractive` function, and then create Ractive instances that
+reference it.
+
+### 1. Inclusion
+
+**Via script tag:** Include `ractive-adaptors-ampersand.min.js` on
+your page below Ractive, e.g:
 
 ```html
 <script src='lib/ractive.js'></script>
-<script src='lib/ractive-adaptors-backbone.min.js'></script>
+<script src='lib/ractive-adaptors-ampersand.min.js'></script>
 ```
 
-To get `ractive-adaptors-backbone.min.js` you can:
+**Via AMD:**
 
-#### Use CDN
+```js
+define(['ractive', 'ractive-adaptors-ampersand'],
+  function(Ractive, RactiveAdaptorsAmpersand) {
+    // See "2. Attaching" below
+});
+```
 
-    //cdn.jsdelivr.net/ractive.adaptors-backbone/latest/ractive-adaptors-backbone.min.js
-    
-#### Use bower
+**Via CommonJS:**
 
-    $ bower i ractive-adaptors-backbone
-    
-#### Use npm
+```js
+var Ractive = require('ractive');
+var RactiveAdaptorsAmpersand = require('ractive-adaptors-ampersand');
 
-    $ npm install --save ractive-adaptors-backbone
+// See "2. Attaching" below
+```
 
-#### Download
+### 2. Attaching
 
-- [Download the latest release](https://github.com/ractivejs/ractive-adaptors-backbone/releases).
+However you include the script, attaching to Ractive will look similar:
 
-[Example]: http://examples.ractivejs.org/backbone
+```js
+window.Ractive.adaptors.Ampersand = window.RactiveAdaptorsAmpersand;
+```
+
+### 3. Activating
+
+```js
+var myRactive = new Ractive({
+  adapt: ['Ampersand']
+});
+```
+
 [Ractive]: http://www.ractivejs.org

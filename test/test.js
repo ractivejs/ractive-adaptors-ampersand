@@ -2,7 +2,6 @@
 require( 'mocha-clean/brief' );
 var mdescribe = require( 'mocha-repeat' );
 var expect    = require( 'chai' ).expect;
-var proxy     = require( 'proxyquire' );
 
 var libs = {
 	ractive: {
@@ -11,37 +10,50 @@ var libs = {
 		'0.5.0': require( '../vendor/ractive/ractive-0.5.0.js' ),
 		'0.4.0': require( '../vendor/ractive/ractive-0.4.0.js' ),
 	},
-	backbone: {
-		'1.1.2': require( '../vendor/backbone/backbone-1.1.2.js' ),
-		'1.0.0': require( '../vendor/backbone/backbone-1.0.0.js' ),
+	model: {
+		'4.0': require( '../vendor/ampersand-model/ampersand-model-4.0' )
+	},
+	collection: {
+		'1.4': require( '../vendor/ampersand-collection/ampersand-collection-1.4' )
 	}
 };
 
 function tests( name, fn ) {
 	mdescribe( 'Ractive', libs.ractive, function ( Ractive, version ) {
-		mdescribe( 'Backbone', libs.backbone, function ( Backbone, version ) {
-			describe( name, function () {
-				fn( Ractive, Backbone );
+		mdescribe( 'Ampersand Model', libs.model, function ( Model, version ) {
+			mdescribe( 'Ampersand Collection', libs.collection, function ( Collection, version ) {
+				describe( name, function () {
+					fn( Ractive, Model, Collection );
+				});
 			});
 		});
 	});
 }
 
-tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
-	var Adaptor, model, ractive, collection;
+tests( 'Ractive-adaptors-ampersand', function ( Ractive, Model, Collection ) {
+	var Adaptor, TestModel, TestCollection, model, ractive, collection;
 
 	/*
 	 * Load the library
 	 */
 
 	before(function () {
-		proxy( '../ractive-adaptors-backbone.js', {
-			ractive: Ractive,
-			backbone: Backbone
-		});
+		Adaptor = require( '..' );
 
-		Adaptor = Ractive.adaptors.Backbone;
-		Ractive.defaults.adapt.push( 'Backbone' );
+		Ractive.adaptors.Ampersand = Adaptor;
+		Ractive.defaults.adapt.push( 'Ampersand' );
+
+		TestCollection = Collection.extend({});
+		TestModel = Model.extend({
+			props: {
+				name: 'string',
+				message: 'string'
+			},
+			collections: {
+				sublist: TestCollection
+			}
+		});
+		TestCollection.prototype.model = TestModel;
 	});
 
 	/*
@@ -51,12 +63,15 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 	describe( 'Sanity tests', function () {
 
 		it( 'adaptor exists and is an object', function () {
-			expect( Ractive.adaptors.Backbone ).is.a( 'object' );
+			expect( Ractive.adaptors.Ampersand ).is.a( 'object' );
 		});
 
-		it( 'Backbone exists', function () {
-			expect( Backbone ).is.a( 'object' );
-			expect( Backbone.Model ).is.a( 'function' );
+		it( 'Model exists', function () {
+			expect( Model ).is.a( 'function' );
+		});
+
+		it( 'Collection exists', function () {
+			expect( Collection ).is.a( 'function' );
 		});
 
 	});
@@ -67,12 +82,12 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 
 	describe( 'filter', function () {
 		it( 'detects models', function () {
-			var model = new Backbone.Model();
+			var model = new TestModel();
 			expect( Adaptor.filter(model) ).true;
 		});
 
 		it( 'detects collections', function () {
-			var collection = new Backbone.Collection();
+			var collection = new Collection();
 			expect( Adaptor.filter(collection) ).true;
 		});
 
@@ -88,7 +103,7 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 
 	describe( 'models', function () {
 		beforeEach(function () {
-			model = new Backbone.Model();
+			model = new TestModel();
 		});
 
 		beforeEach(function () {
@@ -106,7 +121,7 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 		});
 
 		it( 'sees model values before', function () {
-			model = new Backbone.Model({ message: 'hello' });
+			model = new TestModel({ message: 'hello' });
 			ractive.set( 'model', model );
 
 			expect( ractive.get('model.message') ).eql( 'hello' );
@@ -136,6 +151,11 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 			expect( model.get('message') ).eql( 'hello' );
 		});
 
+		it( 'works with setting to `null`', function () {
+			ractive.set( 'model', model );
+			ractive.set( 'model', null );
+		});
+
 	});
 
 	/*
@@ -147,8 +167,8 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 
 		beforeEach(function () {
 			ractive = new Ractive({ template: "{{#model}}{{name}}{{/model}}" });
-			model = new Backbone.Model({ name: "Louie" });
-			newModel = new Backbone.Model({ name: "Miles" });
+			model = new TestModel({ name: "Louie" });
+			newModel = new TestModel({ name: "Miles" });
 
 			ractive.set( 'model', model );
 			ractive.set( 'model', newModel );
@@ -174,12 +194,11 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 	 */
 
 	describe( 'collections', function () {
-		var MyModel, MyCollection, list;
+		var MyCollection, list;
 
 		beforeEach(function () {
-			MyModel = Backbone.Model.extend();
-			MyCollection = Backbone.Collection.extend({
-				model: MyModel
+			MyCollection = Collection.extend({
+				model: TestModel
 			});
 		});
 
@@ -209,7 +228,7 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 		});
 
 		it( 'responds to additions', function () {
-			list.push({ name: 'Susy' });
+			list.add({ name: 'Susy' });
 			expect( ractive.toHTML() ).eql( 'MoeLarryCurlySusy' );
 		});
 
@@ -233,13 +252,12 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 	 */
 
 	describe( 'nested collections', function () {
-		var submodel, sublist, model, list;
+		var submodel, sublist, list;
 
 		beforeEach(function () {
-			submodel = new Backbone.Model({ message: 'hello' });
-			sublist = new Backbone.Collection( [ submodel ] );
-			model = new Backbone.Model({ sublist: sublist });
-			list = new Backbone.Collection( [ model ] );
+			list = new TestCollection( [ { sublist: [ { message: 'hello' } ] } ] );
+			sublist = list.at(0).get('sublist');
+			submodel = sublist.at(0);
 
 			ractive = new Ractive({
 				template: '{{#list}}{{heading}}{{#sublist}}{{message}}{{/sublist}}{{/list}}'
@@ -262,13 +280,13 @@ tests( 'Ractive-adaptors-backbone', function ( Ractive, Backbone ) {
 		});
 
 		it( 'responds to sublist additions', function () {
-			sublist.push( new Backbone.Model({ message: 'howdy' }) );
+			sublist.add( new TestModel({ message: 'howdy' }) );
 			expect( ractive.toHTML() ).eql( 'hellohowdy' );
 		});
 
 		it( 'responds to sublist deletions', function () {
-			var m = new Backbone.Model({ message: 'howdy' });
-			sublist.push(m);
+			var m = new TestModel({ message: 'howdy' });
+			sublist.add(m);
 			sublist.remove(m);
 			expect( ractive.toHTML() ).eql( 'hello' );
 		});

@@ -1,8 +1,8 @@
 {
-	"name": "ractive-backbone",
-	"description": "Backbone adaptor for Ractive.js",
-	"version": "0.2.0",
-	"author": "Rich Harris",
+	"name": "ractive-ampersand",
+	"description": "Ampersand adaptor for Ractive.js",
+	"version": "0.1.0",
+	"author": "Mike Pennisi",
 	"license": "MIT",
 	"main": "ractive-adaptors-backbone.js",
 	"ignore": [
@@ -13,10 +13,10 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ractivejs/ractive-adaptors-backbone.git"
+		"url": "https://github.com/jugglinmike/ractive-adaptors-ampersand.git"
 	},
 	"keywords": [
-		"backbone",
+		"ampersand",
 		"ractive",
 		"data binding",
 		"templates"
