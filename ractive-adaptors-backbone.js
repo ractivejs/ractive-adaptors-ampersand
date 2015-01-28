@@ -102,7 +102,7 @@
 
 		model.on( 'change', this.modelChangeHandler = function () {
 			var release = acquireLock( model );
-			ractive.set( prefix( model.changed ) );
+			ractive.set( prefix( model.changedAttributes() ) );
 			release();
 		});
 	};

@@ -156,6 +156,18 @@ tests( 'Ractive-adaptors-ampersand', function ( Ractive, Model, Collection ) {
 			ractive.set( 'model', null );
 		});
 
+		it( 'only notifies about changed attributes', function () {
+			ractive.set( 'model', model );
+
+			ractive.observe( '*.*', function (newValue, oldValue, keypath) {
+				expect( newValue ).eql( 'foo' );
+				expect( oldValue ).eql( undefined );
+				expect( keypath ).eql( 'model.message' );
+			}, { init: false });
+
+			model.set( 'message', 'foo' );
+		});
+
 	});
 
 	/*
