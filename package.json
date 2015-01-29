@@ -3,7 +3,7 @@
 	"description": "Backbone adaptor for Ractive.js",
 	"version": "0.1.0",
 	"homepage": "http://ractivejs.org",
-	"main": "./ractive-adaptors-backbone.js",
+	"main": "./ractive-adaptors-ampersand.js",
 	"author": {
 		"name": "Mike Pennisi"
 	},
@@ -17,9 +17,9 @@
 		"url": "https://github.com/jusgglinmike/ractive-adaptors-ampersand.git"
 	},
 	"scripts": {
-		"test": "jshint ractive-adaptors-backbone.js && mocha",
-		"coverage": "(cp ractive-adaptors-backbone.js ractive-adaptors-backbone.js~; jscoverage ractive-adaptors-backbone.js; mv ractive-adaptors-backbone-cov.js ractive-adaptors-backbone.js; mocha -R html-cov > coverage.html); mv ractive-adaptors-backbone.js~ ractive-adaptors-backbone.js",
-		"prepublish": "uglifyjs -m < ractive-adaptors-backbone.js > ractive-adaptors-ampersand.min.js"
+		"test": "jshint ractive-adaptors-ampersand.js && mocha",
+		"coverage": "(cp ractive-adaptors-ampersand.js ractive-adaptors-ampersand.js~; jscoverage ractive-adaptors-ampersand.js; mv ractive-adaptors-ampersand-cov.js ractive-adaptors-ampersand.js; mocha -R html-cov > coverage.html); mv ractive-adaptors-ampersand.js~ ractive-adaptors-ampersand.js",
+		"prepublish": "uglifyjs -m < ractive-adaptors-ampersand.js > ractive-adaptors-ampersand.min.js"
 	},
 	"devDependencies": {
 		"chai": "^1.9.2",

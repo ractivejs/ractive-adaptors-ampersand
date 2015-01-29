@@ -4,7 +4,7 @@
 	"version": "0.1.0",
 	"author": "Mike Pennisi",
 	"license": "MIT",
-	"main": "ractive-adaptors-backbone.js",
+	"main": "ractive-adaptors-ampersand.js",
 	"ignore": [
 		"**/.*",
 		"src",
