@@ -62,22 +62,7 @@
 
 	'use strict';
 
-	var lockProperty = '_ractiveAdaptorsAmpersandLock';
 	var Adaptor, ModelWrapper, CollectionWrapper;
-
-	function acquireLock( key ) {
-		key[lockProperty] = ( key[lockProperty] || 0 ) + 1;
-		return function release() {
-			key[lockProperty] -= 1;
-			if ( !key[lockProperty] ) {
-				delete key[lockProperty];
-			}
-		};
-	}
-
-	function isLocked( key ) {
-		return !!key[lockProperty];
-	}
 
 	function isModel( object ) {
 		return object && typeof object.getType === 'function' &&
@@ -101,9 +86,9 @@
 		this.value = model;
 
 		model.on( 'change', this.modelChangeHandler = function () {
-			var release = acquireLock( model );
-			ractive.set( prefix( model.changedAttributes() ) );
-			release();
+			Object.keys( prefix( model.changedAttributes() ) ).forEach( function ( keypath ) {
+				ractive.update( keypath );
+			});
 		});
 	};
 
@@ -115,9 +100,8 @@
 			return this.value;
 		},
 		set: function ( keypath, value ) {
-			// Only set if the model didn't originate the change itself, and
-			// only if it's an immediate child property
-			if ( !isLocked( this.value ) && keypath.indexOf( '.' ) === -1 ) {
+			// Only set if it's an immediate child property
+			if ( keypath.indexOf( '.' ) === -1 ) {
 				// If the attribute value is a Collection that has not actually
 				// changed, setting it with `Model#set` will translate to an
 				// eventual `Collection#set`, which will trigger unecessary
@@ -146,10 +130,9 @@
 
 		collection.on( 'add remove reset sort', this.changeHandler = function () {
 			// TODO smart merge. It should be possible, if awkward, to trigger smart
-			// updates instead of a blunderbuss .set() approach
-			var release = acquireLock( collection );
-			ractive.set( keypath, collection.models );
-			release();
+			// updates instead of a blunderbuss .update() approach
+
+			ractive.update( keypath );
 		});
 	};
 
@@ -161,9 +144,6 @@
 			return this.value.models;
 		},
 		reset: function ( models ) {
-			if ( isLocked( this.value ) ) {
-				return;
-			}
 
 			// If the new object is an Ampersand collection, assume this one is
 			// being retired. Ditto if it's not a collection at all
